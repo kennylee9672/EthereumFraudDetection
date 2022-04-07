@@ -6,10 +6,11 @@
   - Preparation:
     - Focus on current database for now
   - Feature Evaluation:
-    - PCA → find the good features
+    - PCA → find the good features (Kenny)
+    - Heatmap (Akshay)
   - Balanced Data / Training Data prep:
     - 3-Way cross validation
-    - SMOTE
+    - SMOTE (Pratik)
 
 ### Part 2. Model Choice
   - Supervised:
