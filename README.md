@@ -1,4 +1,4 @@
-# Ethereum_Fraud_Detection
+# Ethereum Fraud Detection
 
 ## Milestones
 
