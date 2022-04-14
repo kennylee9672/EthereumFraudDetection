@@ -6,3 +6,4 @@ scikit-learn
 imblearn
 xgboost
 shap
+imbalanced-learn
