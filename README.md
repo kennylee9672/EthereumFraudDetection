@@ -20,3 +20,8 @@
 
 ### Part 3. Model Evaluation (Kenny)
   - ROC, PRC (F1)
+
+
+- convert string to numeric (S)
+- normalized the data ()
+- features explaination
