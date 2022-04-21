@@ -25,3 +25,13 @@
 - convert string to numeric (S)
 - normalized the data ()
 - features explaination
+
+### Notes:
+ - Etherscan column verification: confirm data with etherscan (Currently all values are 0) 
+    - ERC20 min val sent contract
+    - ERC20 max val sent contract
+    - ERC20 avg val sent contract
+    - ERC20 avg time between sent tnx
+    - ERC20 avg time between rec tnx
+    - ERC20 avg time between rec 2 tnx
+    - ERC20 avg time between contract tnx
