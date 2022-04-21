@@ -5,7 +5,7 @@ import pandas as pd
 from config import TARGET
 
 
-class PCA_Model:
+class PCA_Transformer:
     def __init__(self, df):
         self.df = df
         self.features = df.columns
@@ -13,6 +13,11 @@ class PCA_Model:
 
     def set_n_components(self, n):
         self.n_components = n
+
+    def update_dataframe(self, df):
+        self.df = df
+        self.features = df.columns
+        self.n_components = min(4, len(self.features) - 1)
 
     def run(self):
         # Separate features and target

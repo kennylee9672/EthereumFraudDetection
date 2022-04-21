@@ -10,7 +10,7 @@ class Ethereum_Fraud_Model:
     def __init__(self):
         self.import_data()
         self.preprocess_data()
-        self.models = []
+        self.models = {}
 
     def import_data(self, name='Ethereum'):
         if name == 'Ethereum':
@@ -23,13 +23,14 @@ class Ethereum_Fraud_Model:
         self.filtered_colns = ['Index', 'Address', ' ERC20 most sent token type', ' ERC20_most_rec_token_type']
 
     def add_model(self, model):
-        self.models.append(model)
+        self.models[model.get_model_name().lower()] = model
 
     def run_model(self, model_name):
-        for model in self.models:
-            if model.get_model_name().upper() == model_name.upper():  # Making it case-insensitive
-                model.run()
+        if model_name.lower() in self.models.keys():
+            self.models[model_name.lower()].run()
+        else:
+            print('No Associated Model Found!')
 
     def run_models(self):
-        for model in self.models:
-            model.run()
+        for key in self.models:
+            self.models[key].run()

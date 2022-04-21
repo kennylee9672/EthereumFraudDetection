@@ -7,6 +7,16 @@ import csv
 import os
 
 
+def print_nan_data(df):
+    print(df.isnull().sum() / (len(df) * 0.01))
+
+def remove_nan_rows(df):
+    # Drop missing data observations/rows
+    return df.dropna()
+
+def remove_nan_columns(df):
+    return df.dropna(axis=1)
+
 # Temporal implementation of cleaning
 def clean(df):
     filtered_colns = ['Index', 'Address', ' ERC20 most sent token type', ' ERC20_most_rec_token_type']
