@@ -1,10 +1,28 @@
 # This is a sample Python script.
-
 # Press ⌃R to execute it or replace it with your code.
 # Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+
 import pandas as pd
 import csv
+import os
 
+
+def print_nan_data(df):
+    print(df.isnull().sum() / (len(df) * 0.01))
+
+def remove_nan_rows(df):
+    # Drop missing data observations/rows
+    return df.dropna()
+
+def remove_nan_columns(df):
+    return df.dropna(axis=1)
+
+# Temporal implementation of cleaning
+def clean(df):
+    filtered_colns = ['Index', 'Address', ' ERC20 most sent token type', ' ERC20_most_rec_token_type']
+    df = df.drop(filtered_colns, axis=1)
+    df.fillna(df.median(), inplace=True)
+    return df
 
 
 def fill_missing():
@@ -19,19 +37,20 @@ def fill_missing():
                 while(j < 51):
                     print(str(row[j]) + " " + str(j))
                     j = j + 1
-            elif:
+            # elif:
+            else:
                 print(line_count)
                 i = 0
                 while(i < 51):
                     if row[i] != '':
                         print(str(row[i]) + "," + str(i))
                     else:
-												if !(os.system('wget https://https://etherscan.io/address/' + str(row[0]) + '#tokentxns')):
-														df = pd.read_csv(csv_file2, delimiter=",")
-														df.loc[line_count:48] = '0.0'
-														df.to_csv(csv_file2)
-			                      #row[i] == '0.0'
-			                      #print(row[i])
+                        if not (os.system('wget https://https://etherscan.io/address/' + str(row[0]) + '#tokentxns')):
+                            df = pd.read_csv(csv_file2, delimiter=",")
+                            df.loc[line_count:48] = '0.0'
+                            df.to_csv(csv_file2)
+                            #row[i] == '0.0'
+                            #print(row[i])
                         if i < 49:
                             #df.to_csv(csv_file2)
                             print(row[i])
