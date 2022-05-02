@@ -3,13 +3,10 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, classification_report, precision_recall_curve, accuracy_score
-from sklearn.ensemble import RandomForestClassifier
-from mlxtend.plotting import plot_confusion_matrix
-
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve, auc, classification_report, plot_confusion_matrix, precision_recall_curve, f1_score
 from sklearn.metrics import precision_score, recall_score, auc, accuracy_score
+from sklearn.ensemble import RandomForestClassifier
+from mlxtend.plotting import plot_confusion_matrix
 
 from config import *
 from utils.split import kfold
@@ -48,8 +45,10 @@ class Random_Forest_Model:
 
         f1_lbfgs = []
         accuracy_scores = []
+        precision_scores = []
+        recall_scores = []
         aurpc_scores = []
-        
+
         X, y = self.X, self.y
         for count, (train, test) in tqdm(enumerate(kfold(X, y, self.batch))):
             X_train, X_test = X.iloc[train], X.iloc[test]
@@ -58,23 +57,29 @@ class Random_Forest_Model:
             rfc = rfc.fit(X_train, y_train)
             y_pred_proba = rfc.predict_proba(X_test)
             y_pred = rfc.predict(X_test)
-            
+
             fraud_precision, fraud_recall, thresholds = precision_recall_curve(y_test, y_pred_proba[:, 1])
             f1_lbfgs.append(f1_score(y_pred=y_pred, y_true=y_test))
             accuracy = accuracy_score(y_test, y_pred)
             accuracy_scores.append(accuracy)
             aurpc_scores.append(auc(fraud_recall, fraud_precision))
+            precision_scores.append(precision_score(y_pred=y_pred, y_true=y_test))
+            recall_scores.append(recall_score(y_pred=y_pred, y_true=y_test))
             print("AUPRC:", auc(fraud_recall, fraud_precision))
             print("F1 score: ", f1_score(y_pred=y_pred, y_true=y_test), '\n')
 
             self.evaluate(y_test, y_pred)
             self.plot_PRC(y_test, y_pred_proba, count)
-        
-        mean_f1_lbfgs = sum(f1_lbfgs) / len(f1_lbfgs)
+
+        mean_f1 = sum(f1_lbfgs) / len(f1_lbfgs)
         mean_accuracy = sum(accuracy_scores)/ len(accuracy_scores)
         mean_aurpc = sum(aurpc_scores) / len(aurpc_scores)
-        print('Token Counts f1 score lbfgs: ', str(s))
+        mean_precision = sum(precision_scores)/ len(precision_scores)
+        mean_recall = sum(recall_scores)/len(recall_scores)
         print('Token Counts accuracy score: ', str(mean_accuracy))
+        print('Token Counts precision score: ', str(mean_precision))
+        print('Token Counts recall score: ', str(mean_recall))
+        print('Token Counts f1 score: ', str(mean_f1))
         print('Token Counts aurpc score: ', str(mean_aurpc))
 
         plt.xlabel('Recall')
