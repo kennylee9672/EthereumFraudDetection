@@ -61,7 +61,10 @@ class GMM_Model():
         x3 = model.score(valid[valid[TARGET] == 1].drop(TARGET, axis=1).values)
         l = sorted([x1, x2, x3])
         
-        return (min(l), max(l))
+        left, right = min(l), max(l)
+        margin = abs(right - left)
+        
+        return (left - 0.5*margin, right + 0.5*margin)
 
     def run(self, verbose=False):
         train, valid, test = self.train, self.valid, self.test
