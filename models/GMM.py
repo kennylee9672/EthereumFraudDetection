@@ -11,10 +11,6 @@ from config import *
 from sklearn.mixture import GaussianMixture
 
 class GMM_Model():
-    """
-        Class for GMM Model
-    """
-
     def __init__(self, df):
         self.df = df
         self.preprocess_data()
@@ -67,110 +63,90 @@ class GMM_Model():
         
         return (min(l), max(l))
 
-    # TO-DO: Break this big function into train, test and evaluate functions
-    def run(self, train=None, valid=None, test=None, verbose=False):
-        print("Model Name: " + self.get_model_name())
-        display(self.df.head())
-        if not train:
-            train = self.train
-        if not valid:
-            valid = self.valid
-        if not test:
-            test = self.test
-        for components in range(1, 5):
-            print('Components: ' + str(components))
-            # gmm = GaussianMixture(n_components=components, n_init=4, random_state=42, covariance_type='tied')
-            gmm = GaussianMixture(n_components=components, n_init=4, random_state=42)
-            # Train GMM on train data
+    def run(self, verbose=False):
+        train, valid, test = self.train, self.valid, self.test
+        for components in range(1, 4):
+            gmm = GaussianMixture(n_components=components, n_init=4, random_state=42, covariance_type='full')
             gmm.fit(train.drop(TARGET, axis=1).values)
-            if verbose:
-                print('GMM Score for train set')
-                print(gmm.score(train.drop(TARGET, axis=1).values))
-                print('GMM Score for normal transcation subset in validation set')
-                print(gmm.score(valid[valid[TARGET] == 0].drop(TARGET, axis=1).values))
-                print('GMM Score for fraud transcation subset in validation set')
-                print(gmm.score(valid[valid[TARGET] == 1].drop(TARGET, axis=1).values))
-            
+
+            # Compute thresholds
             threshold_range = self.compute_threshold_range(gmm, train, valid)
-            print('Threshold range: ', threshold_range[0], threshold_range[1])
-
-            # Figuring out a threshold range based on GMM score obtained from previous step
-            tresholds = np.linspace(threshold_range[0], threshold_range[1], 100)
-#             tresholds = np.linspace(-1000, 100, 100)
-            # gmm.score_samples to calculate a GMM score for each data sample
-            y_scores = gmm.score_samples(valid.drop(TARGET, axis=1).values)
-
+            thresholds = np.linspace(threshold_range[0], threshold_range[1], 100)
+            print('Threshold range: %.3f, %.3f' % (threshold_range[0], threshold_range[1]))
+            
+            # Calculate score for each data sample
             scores = []
-            for treshold in tresholds:
-                y_hat = y_scores.copy()
+            for th in thresholds:
+                y_pred_proba = gmm.score_samples(valid.drop(TARGET, axis=1).values)
+                y_hat = y_pred_proba.copy()
+                y_valid = valid[TARGET].values
                 
-#                 y_hat = (y_scores < treshold).astype(int)
-                y_hat[y_hat >= treshold] = 0
-                y_hat[y_hat < treshold] = 1
-            
-                scores.append([recall_score(y_pred=y_hat, y_true=valid[TARGET].values),
-                               precision_score(y_pred=y_hat, y_true=valid[TARGET].values),
-                               f1_score(y_pred=y_hat, y_true=valid[TARGET].values)])
-            
-            # Plotting
-            labels = {'title': 'Evolution of performance scores vs. threshold for GMM probability',
-                      'xlabel': 'Threshold T [neg loglikelihood]',
-                      'ylabel': 'Score'}
-            fig, ax = plt.subplots()
-            
-            recall_vs_th = [scores[0] for i in scores]
-            precision_vs_th = [scores[1] for i in scores]
-            f1_vs_th = [scores[2] for i in scores]
-            y_arrs = [recall_vs_th, precision_vs_th, f1_vs_th]
-            print(y_arrs)
-            
-            for y_arr in y_arrs:
-                plt.plot(tresholds, y_arr)
-            ax = plt.gca()
-            ax.set(title=labels['title'], xlabel=labels['xlabel'], ylabel=labels['ylabel'])
-            ax.legend([i for i in ['Recall', 'Precesion', 'F1']])
-                
+                y_hat[y_hat >= th] = 0
+                y_hat[y_hat < th] = 1
+                scores.append([recall_score(y_hat, y_valid),
+                               precision_score(y_hat, y_valid),
+                               f1_score(y_hat, y_valid)])
             scores = np.array(scores)
-            if verbose:
-                print(scores[:, 2].max(), scores[:, 2].argmax())
-
-            final_tresh = tresholds[scores[:, 2].argmax()]
-            if verbose:
-                print('The final threshold selected is: ', final_tresh)
-
-            y_hat_test = (gmm.score_samples(test.drop(TARGET, axis=1).values) < final_tresh).astype(int)
-
-            # TO-DO: Call defined evaluation functions
-#             print('Final threshold: %f' % final_tresh)
-#             print('Test Recall Score: %.3f' % recall_score(y_pred=y_hat_test, y_true=test[TARGET].values))
-#             print('Test Precision Score: %.3f' % precision_score(y_pred=y_hat_test, y_true=test[TARGET].values))
-#             print('Test F1 Score: %.3f' % f1_score(y_pred=y_hat_test, y_true=test[TARGET].values))
-
-            cnf_matrix = confusion_matrix(test[TARGET].values, y_hat_test)
-            print("tn, fp, fn, tp:", cnf_matrix.ravel())
             
-#     def plot_evaluations(self, recall, precesion, f1):     
-#     fig, ax = plt.subplots()
-#         for key in y_arrs:
-#             plt.plot(x_arr, y_arrs[key])
-#         ax = plt.gca()
-#         ax.set(title=labels['title'],
-#                xlabel=labels['xlabel'],
-#                ylabel=labels['ylabel'])
-#         ax.legend([key for key in y_arrs])
+            # Plot Result
+            self.plot_evaluations(components, thresholds, scores)
+
+            # Evaluate on test data with optimal threshold
+            final_threshold = thresholds[scores[:, 2].argmax()]
+            y_hat = self.evaluate_test(gmm, final_threshold)
+            y_test = test[TARGET].values
+            
+            # Output results
+            if verbose:
+                self.check_scores(gmm)
+                print(classification_report(y_test, y_hat, target_names=CLASSES))
+
+    def evaluate_test(self, model, threshold):
+        X_test = self.test.drop(TARGET, axis=1).values
+        y_test = self.test[TARGET]
+        
+        # get predictions
+        y_pred_proba = model.score_samples(X_test)
+        y_hat = y_pred_proba.copy()
+
+        # check prediction accuracy based on such threshold
+        y_hat[y_hat >= threshold] = 0
+        y_hat[y_hat < threshold] = 1
+
+        recall = recall_score(y_test, y_hat)
+        precision = precision_score(y_test, y_hat)
+        f1 = f1_score(y_test, y_hat)
+        accuracy = accuracy_score(y_test, y_hat)
+        cf = confusion_matrix(y_test, y_hat)
+
+        print('Optimal threshold: %.3f' % threshold)
+        print('Recall score: %.3f' % recall)
+        print('Precision score: %.3f' % precision)
+        print('F1 Score: %.3f' % f1)
+        print('Accuracy: %.3f' % accuracy)
+        
+        return y_hat
+            
+    def plot_evaluations(self, n, thresholds, scores):            
+        fig, ax = plt.subplots()
+        score_names = ['Recall', 'Precesion', 'F1']
+        for i in range(len(score_names)):
+            plt.plot(thresholds, scores[:, i])
+        ax.legend(score_names)
+        plt.title('GMM\'s %s components' % str(n))
+        plt.xlabel('Threshold')
+        plt.ylabel('Score')
+        plt.show()
 
     def check_shapes(self):
         print('Train shape: ', self.train.shape)
-        print('Proportion os anomaly in training set: %.3f\n' % self.train[TARGET].mean())
+        print('Proportion os anomaly in training set: %.3f' % self.train[TARGET].mean())
         print('Valid shape: ', self.valid.shape)
-        print('Proportion os anomaly in validation set: %.3f\n' % self.valid[TARGET].mean())
+        print('Proportion os anomaly in validation set: %.3f' % self.valid[TARGET].mean())
         print('Test shape:, ', self.test.shape)
         print('Proportion os anomaly in test set: %.3f\n' % self.test[TARGET].mean())
     
-    def check_scores(self, gmm):
-        print('GMM Score for train set')
-        print(gmm.score(self.train.drop(TARGET, axis=1).values))
-        print('GMM Score for normal transcation subset in validation set')
-        print(gmm.score(self.valid[self.valid[TARGET] == 0].drop(TARGET, axis=1).values))
-        print('GMM Score for fraud transcation subset in validation set')
-        print(gmm.score(self.valid[self.valid[TARGET] == 1].drop(TARGET, axis=1).values))
+    def check_scores(self, model):
+        print('GMM Score for train set: %.3f' % model.score(self.train.drop(TARGET, axis=1).values))
+        print('GMM Score for normal transcation in validation set: %.3f' % model.score(self.valid[self.valid[TARGET] == 0].drop(TARGET, axis=1).values))
+        print('GMM Score for fraud transcation in validation set: %.3f\n' % model.score(self.valid[self.valid[TARGET] == 1].drop(TARGET, axis=1).values))
