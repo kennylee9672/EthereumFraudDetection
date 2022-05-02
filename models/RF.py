@@ -7,6 +7,10 @@ from sklearn.metrics import confusion_matrix, classification_report, precision_r
 from sklearn.ensemble import RandomForestClassifier
 from mlxtend.plotting import plot_confusion_matrix
 
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve, auc, classification_report, plot_confusion_matrix, precision_recall_curve, f1_score
+from sklearn.metrics import precision_score, recall_score, auc, accuracy_score
+
 from config import *
 from utils.split import kfold
 
@@ -42,6 +46,10 @@ class Random_Forest_Model:
         depth = self.compute_optimal_depth()
         rfc = RandomForestClassifier(max_depth=depth)
 
+        f1_lbfgs = []
+        accuracy_scores = []
+        aurpc_scores = []
+        
         X, y = self.X, self.y
         for count, (train, test) in tqdm(enumerate(kfold(X, y, self.batch))):
             X_train, X_test = X.iloc[train], X.iloc[test]
@@ -50,9 +58,24 @@ class Random_Forest_Model:
             rfc = rfc.fit(X_train, y_train)
             y_pred_proba = rfc.predict_proba(X_test)
             y_pred = rfc.predict(X_test)
+            
+            fraud_precision, fraud_recall, thresholds = precision_recall_curve(y_test, y_pred_proba[:, 1])
+            f1_lbfgs.append(f1_score(y_pred=y_pred, y_true=y_test))
+            accuracy = accuracy_score(y_test, y_pred)
+            accuracy_scores.append(accuracy)
+            aurpc_scores.append(auc(fraud_recall, fraud_precision))
+            print("AUPRC:", auc(fraud_recall, fraud_precision))
+            print("F1 score: ", f1_score(y_pred=y_pred, y_true=y_test), '\n')
 
             self.evaluate(y_test, y_pred)
             self.plot_PRC(y_test, y_pred_proba, count)
+        
+        mean_f1_lbfgs = sum(f1_lbfgs) / len(f1_lbfgs)
+        mean_accuracy = sum(accuracy_scores)/ len(accuracy_scores)
+        mean_aurpc = sum(aurpc_scores) / len(aurpc_scores)
+        print('Token Counts f1 score lbfgs: ', str(s))
+        print('Token Counts accuracy score: ', str(mean_accuracy))
+        print('Token Counts aurpc score: ', str(mean_aurpc))
 
         plt.xlabel('Recall')
         plt.ylabel('Precision')
