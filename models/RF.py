@@ -7,6 +7,7 @@ from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve, auc, cla
 from sklearn.metrics import precision_score, recall_score, auc, accuracy_score
 from sklearn.ensemble import RandomForestClassifier
 from mlxtend.plotting import plot_confusion_matrix
+from sklearn.utils import shuffle
 
 from config import *
 from utils.split import kfold
@@ -34,10 +35,12 @@ class Random_Forest_Model:
         self.batch = batch
 
     def preprocess_data(self):
+        self.df = shuffle(self.df)
         self.X = self.df.drop(columns=[TARGET])
         self.y = self.df[TARGET]
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             self.X, self.y, test_size=self.test_size, random_state=42)
+        
 
     def run(self):
         depth = self.compute_optimal_depth()

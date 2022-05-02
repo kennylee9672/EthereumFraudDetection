@@ -1,11 +1,10 @@
-from sklearn.linear_model import LogisticRegression
-from sklearn.utils import shuffle
-
 import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, roc_auc_score, roc_curve, auc, classification_report, plot_confusion_matrix, precision_recall_curve, f1_score
 from sklearn.metrics import precision_score, recall_score, auc, accuracy_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.utils import shuffle
 
 from utils.split import kfold
 from config import *
