@@ -34,11 +34,17 @@ class Logistic_Regression_Model:
         X, y = self.X, self.y
 
         f1_lbfgs = []
+        accuracy_scores = []
+        aurpc_scores = []
+        precision_scores = []
+        recall_scores = []
 
         for count, (train, test) in enumerate(kfold(X, y, 5)):
+            print('Fold: ' + str(count))
             X_train, X_test = X.iloc[train], X.iloc[test]
             y_train, y_test = y.iloc[train], y.iloc[test]
-
+            
+            
             lr = LogisticRegression(solver="saga")
             clf = lr.fit(X_train, y_train)
             pred = clf.predict(X_test)
@@ -52,6 +58,10 @@ class Logistic_Regression_Model:
             print("AUPRC:", auc(fraud_recall, fraud_precision))
             print("F1 score: ", f1_score(y_pred=pred, y_true=y_test), '\n')
             f1_lbfgs.append(f1_score(y_pred=pred, y_true=y_test))
+            accuracy_scores.append(accuracy)
+            aurpc_scores.append(auc(fraud_recall, fraud_precision))
+            precision_scores.append(precision_score(y_pred=pred, y_true=y_test))
+            recall_scores.append(recall_score(y_pred=pred, y_true=y_test))
 
             label = 'Fold: ' + str(count)
             plt.plot(fraud_recall, fraud_precision, label=label)
@@ -61,4 +71,14 @@ class Logistic_Regression_Model:
         plt.legend()
         plt.show()
         mean_f1_lbfgs = sum(f1_lbfgs) / len(f1_lbfgs)
+        mean_accuracy = sum(accuracy_scores)/ len(accuracy_scores)
+        mean_aurpc = sum(aurpc_scores) / len(aurpc_scores)
+        mean_precision_scores = sum(precision_scores)/ len(precision_scores)
+        mean_recall_scores = sum(recall_scores)/len(recall_scores)
+        
+        print('Token Counts accuracy score: ', str(mean_accuracy))
+        print('Token Counts precision score: ', str(mean_precision_scores))
+        print('Token Counts recall score: ', str(mean_recall_scores))
         print('Token Counts f1 score lbfgs: ', str(mean_f1_lbfgs))
+        print('Token Counts aurpc score: ', str(mean_aurpc))
+        
